@@ -76,6 +76,8 @@ def plot_ground_state_expected_value(
     plt.legend()
 
 
+def plot_specific_heat_capacity(temperature, number_of_particles, )
+
 
 if __name__ == "__main__":
     run_multiple_models(number_of_particles=100)
