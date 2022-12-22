@@ -1,11 +1,11 @@
 import numpy as np
-
-MAXIMUM_ENERGY_LEVEL = 100
-MU_MIN = -30
+from constants import *
 
 
-def g(n):
+
+def g(energy_level):
     # Calculates the degeneracy in the system
+    n = energy_level
     return 1 / 2 * n * (n + 3) + 1
 
 
@@ -13,7 +13,7 @@ def get_number_of_particles(mu, temperature):
     T = temperature
     beta = 1 / T
     return sum(
-        [g(n) / (np.exp(beta * (n - mu)) - 1) for n in range(MAXIMUM_ENERGY_LEVEL + 1)]
+        [g(n) / (np.exp(beta * (n - mu)) - 1) for n in range(MAX_ENERGY_LEVEL + 1)]
     )
 
 
@@ -37,8 +37,17 @@ def find_mu(temperature, number_of_particles):
 
 
 def get_increase_probability(mu, temperature, energy_level):
-    return 1
+    T, n = temperature, energy_level
+    beta = 1 / T
+    plus_state = g(n + 1) / (np.exp(beta * (n + 1 - mu)) - 1)
+    minus_state = g(n - 1) / (np.exp(beta * (n - 1 - mu)) - 1)
+    return plus_state / (plus_state + minus_state)
 
 
 def get_decrease_probability(mu, temperature, energy_level):
-    return 0
+    T, n = temperature, energy_level
+    beta = 1 / T
+    plus_state = g(n + 1) / (np.exp(beta * (n + 1 - mu)) - 1)
+    minus_state = g(n - 1) / (np.exp(beta * (n - 1 - mu)) - 1)
+    return minus_state / (plus_state + minus_state)
+
