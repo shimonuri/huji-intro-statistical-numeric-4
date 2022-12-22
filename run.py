@@ -143,7 +143,5 @@ def plot_specific_heat_capacity(temperature_range, number_of_particles, total_en
     plt.legend()
 
 
-=======
->>>>>>> 1ca803b9af880ef5d10c5c31b0ffee27b8be7f67
 if __name__ == "__main__":
     run_multiple_models()
