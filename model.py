@@ -1,6 +1,7 @@
 import dataclasses
 import random
 import calculations
+import constants
 
 
 @dataclasses.dataclass
@@ -70,6 +71,9 @@ class Particles:
             for energy_level in range(max_energy_level + 1)
         }
 
+    def __str__(self):
+        return str(self.energy_level_to_occurrences)
+
     def copy(self, particles):
         self.max_energy_level = particles.max_energy_level
         self.number_of_particles = particles.number_of_particles
@@ -89,6 +93,9 @@ class Run:
         self.temperature = temperature
         self.particles = Particles(max_energy_level, number_of_particles)
         self.data = RunData(temperature=temperature, mu=mu)
+
+    def __str__(self):
+        return str(self.particles)
 
     def run_step(self):
         energy_level = self._get_random_energy_level()
@@ -145,17 +152,17 @@ class Run:
 
 
 class Model:
-    def __init__(
-        self, number_of_particles, max_energy_level, temperature, stop_condition
-    ):
+    def __init__(self, number_of_particles, temperature, stop_condition):
         self.number_of_particles = number_of_particles
-        self.max_energy_level = max_energy_level
+        self.max_energy_level = constants.MAX_ENERGY_LEVEL
         self.temperature = temperature
         self.stop_condition = stop_condition
         self.mu = calculations.find_mu(
             temperature=temperature, number_of_particles=number_of_particles
         )
-        self.run = Run(temperature, max_energy_level, number_of_particles, self.mu)
+        self.run = Run(
+            temperature, constants.MAX_ENERGY_LEVEL, number_of_particles, self.mu
+        )
 
     def run(self, initial_steps=1000) -> Run:
         steps = initial_steps // 2
