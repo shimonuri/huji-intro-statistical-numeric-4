@@ -22,21 +22,22 @@ def main(path, plot):
     else:
         with open(path, "rt") as file:
             data = json.load(file)
-            for number_of_particles, number_of_particles_data in data:
+            for number_of_particles, number_of_particles_data in data.items():
                 plot_ground_state_expected_value(
                     temperature_range=number_of_particles_data["temperatures"],
                     ground_state_expected_values=number_of_particles_data[
                         "ground_state_expected_values"
                     ],
                     ground_state_stds=number_of_particles_data["ground_state_stds"],
-                    number_of_particles=number_of_particles,
+                    number_of_particles=int(float(number_of_particles)),
                 )
             plt.show()
 
 
 def run_multiple_models(path):
     number_of_particles_to_data = {}
-    for number_of_particles in [1e1]:  # [1e1, 1e2, 1e3, 1e4]:
+    for number_of_particles in [1e1, 1e2, 1e3, 1e4]:
+        logging.info(f"Number of particles: {number_of_particles}")
         temperatures = _get_temperatures(number_of_particles)
         (
             ground_state_expected_values,
@@ -55,11 +56,10 @@ def run_multiple_models(path):
             "ground_state_stds": ground_state_stds,
             "total_energy_stds": total_energy_stds,
         }
-    plt.show()
-    with open(path, "wt") as file:
-        json.dump(
-            number_of_particles_to_data, file, indent=4,
-        )
+        with open(path, "wt") as file:
+            json.dump(
+                number_of_particles_to_data, file, indent=4,
+            )
 
 
 def multiple_temperature_runs(number_of_particles, temperatures):
@@ -81,7 +81,6 @@ def multiple_temperature_runs(number_of_particles, temperatures):
 
 
 def _get_temperatures(number_of_particles):
-    return [0.2, 5]
     max_temperature = _get_max_temperature(number_of_particles)
     return [
         0.2 * temperature for temperature in range(1, int(max_temperature // 0.2) + 1)

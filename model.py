@@ -5,7 +5,6 @@ import constants
 import logging
 
 
-
 @dataclasses.dataclass
 class EnergyLevel:
     level: int
@@ -42,6 +41,7 @@ class RunData:
     temperature: float
     mu: float
     steps: int = 0
+    total_energy_second_momentum: float = 0
     total_energy_expected_value: float = 0
     ground_level: EnergyLevel = EnergyLevel(0, 0, 0)
 
@@ -55,6 +55,9 @@ class RunData:
         self.total_energy_expected_value = (
             self.total_energy_expected_value * self.steps + total_energy
         ) / (self.steps + 1)
+        self.total_energy_second_momentum = (
+            self.total_energy_second_momentum * self.steps + total_energy ** 2
+        ) / (self.steps + 1)
         self.steps += 1
         self.ground_level.add(zero_energy_occurrences)
 
@@ -62,6 +65,7 @@ class RunData:
         self.steps = attempt.steps
         self.total_energy_expected_value = attempt.total_energy_expected_value
         self.ground_level.copy(attempt.ground_level)
+        self.total_energy_second_momentum = attempt.total_energy_second_momentum
 
 
 class Particles:
@@ -171,6 +175,7 @@ class Model:
         self.mu = calculations.find_mu(
             temperature=temperature, number_of_particles=number_of_particles
         )
+        logging.info(f"mu: {self.mu}")
 
     def run(self, initial_steps=1000) -> Run:
         steps = initial_steps // 2
