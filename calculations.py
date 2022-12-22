@@ -24,7 +24,6 @@ def find_mu(temperature, number_of_particles):
     N_try = get_number_of_particles(mu=mu_try, temperature=T)
 
     while N != int(N_try):
-        print(N, N_try, mu_try)
         mu_try = (mu_min + mu_max) / 2
         N_try = get_number_of_particles(mu=mu_try, temperature=T)
         if N_try > N:
