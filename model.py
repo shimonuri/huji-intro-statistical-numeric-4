@@ -1,5 +1,6 @@
 import dataclasses
 import random
+import calculations
 
 
 @dataclasses.dataclass
@@ -36,6 +37,7 @@ class EnergyLevel:
 @dataclasses.dataclass
 class RunData:
     temperature: float
+    mu: float
     steps: int = 0
     total_energy_expected_value: float = 0
     ground_level: EnergyLevel = EnergyLevel(0, 0, 0)
@@ -83,10 +85,10 @@ class Particles:
 
 
 class Run:
-    def __init__(self, temperature, max_energy_level, number_of_particles):
+    def __init__(self, temperature, max_energy_level, number_of_particles, mu):
         self.temperature = temperature
         self.particles = Particles(max_energy_level, number_of_particles)
-        self.data = RunData(temperature)
+        self.data = RunData(temperature=temperature, mu=mu)
 
     def run_step(self):
         energy_level = self._get_random_energy_level()
@@ -114,6 +116,32 @@ class Run:
 
     def _update_energy(self, energy_level):
         random_number = random.random()
+        if random_number <= calculations.get_decrease_probability(
+            mu=self.data.mu,
+            temperature=self.data.temperature,
+            energy_level=energy_level,
+        ):
+            self._decrease_energy(energy_level)
+        else:
+            self._increase_energy(energy_level)
+
+    def _update_probability(self, energy_level):
+        self.particles.energy_level_to_probability[energy_level] = (
+            self.particles.energy_level_to_occurrences[energy_level]
+            / self.particles.number_of_particles
+        )
+
+    def _increase_energy(self, energy_level):
+        self.particles.energy_level_to_occurrences[energy_level] -= 1
+        self.particles.energy_level_to_occurrences[energy_level + 1] += 1
+        self._update_probability(energy_level)
+        self._update_probability(energy_level + 1)
+
+    def _decrease_energy(self, energy_level):
+        self.particles.energy_level_to_occurrences[energy_level] -= 1
+        self.particles.energy_level_to_occurrences[energy_level - 1] += 1
+        self._update_probability(energy_level)
+        self._update_probability(energy_level - 1)
 
 
 class Model:
@@ -124,6 +152,10 @@ class Model:
         self.max_energy_level = max_energy_level
         self.temperature = temperature
         self.stop_condition = stop_condition
+        self.mu = calculations.find_mu(
+            temperature=temperature, number_of_particles=number_of_particles
+        )
+        self.run = Run(temperature, max_energy_level, number_of_particles, self.mu)
 
     def run(self, initial_steps=1000) -> Run:
         steps = initial_steps // 2
@@ -131,11 +163,13 @@ class Model:
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
             number_of_particles=self.number_of_particles,
+            mu=self.mu,
         )
         full_attempt = Run(
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
             number_of_particles=self.number_of_particles,
+            mu=self.mu,
         )
         while not self._should_stop(half_attempt, full_attempt):
             steps *= 2
