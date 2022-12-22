@@ -26,21 +26,22 @@ class EnergyLevel:
 
 @dataclasses.dataclass
 class Attempt:
+    temperature: float
     steps: int = 0
     total_energy_expected_value: float = 0
-    ground_energy_level: EnergyLevel = EnergyLevel(0, 0, 0)
+    ground_level: EnergyLevel = EnergyLevel(0, 0, 0)
 
     def add(self, zero_energy_occurrences, total_energy):
         self.total_energy_expected_value = (
             self.total_energy_expected_value * self.steps + total_energy
         ) / (self.steps + 1)
         self.steps += 1
-        self.ground_energy_level.add(zero_energy_occurrences)
+        self.ground_level.add(zero_energy_occurrences)
 
     def copy(self, attempt):
         self.steps = attempt.steps
         self.total_energy_expected_value = attempt.total_energy_expected_value
-        self.ground_energy_level.copy(attempt.ground_energy_level)
+        self.ground_level.copy(attempt.ground_level)
 
 
 class Particles:
@@ -66,7 +67,7 @@ class Model:
         self.temperature = temperature
         self.stop_condition = stop_condition
 
-    def run(self, initial_steps=1000):
+    def run(self, initial_steps=1000) -> Attempt:
         steps = initial_steps
         half_attempt = Attempt()
         full_attempt = Attempt()
@@ -87,9 +88,9 @@ class Model:
 
         return (
             abs(
-                full_attempt.ground_energy_level.expected_value
-                - half_attempt.ground_energy_level.expected_value
+                full_attempt.ground_level.expected_value
+                - half_attempt.ground_level.expected_value
             )
-            / full_attempt.ground_energy_level.expected_value
+            / full_attempt.ground_level.expected_value
             <= self.stop_condition
         )

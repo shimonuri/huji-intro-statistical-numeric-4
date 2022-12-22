@@ -3,7 +3,7 @@ import model
 
 def main(temperature, stop_condition):
     my_model = model.Model(temperature, stop_condition)
-    my_model.run()
+    result = my_model.run()
 
 
 if __name__ == "__main__":
