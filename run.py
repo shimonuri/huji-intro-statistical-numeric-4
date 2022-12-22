@@ -73,7 +73,8 @@ def plot_ground_state_expected_value(
     plt.plot(x, y)
     plt.xlabel(r"$T$")
     plt.ylabel(r"$\left\langle N_{0}\right\rangle /N$")
-    plt.show()
+    plt.legend()
+
 
 
 if __name__ == "__main__":
