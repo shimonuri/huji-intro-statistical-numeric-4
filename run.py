@@ -1,6 +1,7 @@
 import model
 from matplotlib import pyplot as plt
 import numpy as np
+import calculations
 
 
 # update matplotlib params:
@@ -76,7 +77,16 @@ def plot_ground_state_expected_value(
     plt.legend()
 
 
-def plot_specific_heat_capacity(temperature, number_of_particles, )
+def plot_specific_heat_capacity(temperature_range, number_of_particles, total_energy_std):
+
+    cv_list = [calculations.get_specific_heat_capacity(temperature=temperature,
+                                                       number_of_particles=number_of_particles,
+                                                       total_energy_std=total_energy_std)
+               for temperature in temperature_range]
+    plt.plot(temperature_range, cv_list)
+    plt.xlabel(r"$T$")
+    plt.ylabel(r"$c_{v}\left(T\right)$")
+    plt.legend()
 
 
 if __name__ == "__main__":
