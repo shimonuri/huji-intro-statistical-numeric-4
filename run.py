@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 plt.rcParams.update({'usetex': True})
 plt.rcParams.update({'font.size': 16})
 
-def main(max_energy_level, number_of_particles, temperature, stop_condition):
+def main(number_of_particles, temperature, stop_condition):
     my_model = model.Model(
         number_of_particles=number_of_particles,
-        max_energy_level=max_energy_level,
         temperature=temperature,
         stop_condition=stop_condition,
     )
     result = my_model.run()
+    print(result)
 
 
 def plot_ground_state_expected_value(temperature_range,
@@ -27,6 +27,4 @@ def plot_ground_state_expected_value(temperature_range,
 
 
 if __name__ == "__main__":
-    main(
-        max_energy_level=100, number_of_particles=100, temperature=1, stop_condition=100
-    )
+    main(number_of_particles=100, temperature=0.2, stop_condition=1e-3)
