@@ -8,6 +8,7 @@ def main(number_of_particles, temperature, stop_condition):
         stop_condition=stop_condition,
     )
     result = my_model.run()
+    print(result)
 
 
 if __name__ == "__main__":
