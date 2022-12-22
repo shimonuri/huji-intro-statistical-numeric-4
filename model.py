@@ -110,8 +110,10 @@ class Run:
             ):
                 return i
 
+        raise RuntimeError("Could not determine energy level")
+
     def _update_energy(self, energy_level):
-        pass
+        random_number = random.random()
 
 
 class Model:

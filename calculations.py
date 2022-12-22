@@ -12,7 +12,9 @@ def g(n):
 def get_number_of_particles(mu, temperature):
     T = temperature
     beta = 1 / T
-    return sum([g(n) / (np.exp(beta * (n - mu)) - 1) for n in range(MAXIMUM_ENERGY_LEVEL + 1)])
+    return sum(
+        [g(n) / (np.exp(beta * (n - mu)) - 1) for n in range(MAXIMUM_ENERGY_LEVEL + 1)]
+    )
 
 
 def find_mu(temperature, number_of_particles):
@@ -34,4 +36,9 @@ def find_mu(temperature, number_of_particles):
     return mu_try
 
 
+def get_increase_probability(mu, temperature, energy_level):
+    return 1
 
+
+def get_decrease_probability(mu, temperature, energy_level):
+    return 0
