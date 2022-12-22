@@ -37,12 +37,11 @@ def find_mu(temperature, number_of_particles):
 
 
 def get_increase_probability(mu, temperature, energy_level):
-     T, n = temperature, energy_level
-     beta = 1 / T
-     plus_state = g(n + 1) / (np.exp(beta * (n + 1 - mu)) - 1)
-     minus_state = g(n - 1) / (np.exp(beta * (n - 1 - mu)) - 1)
-
-     return  plus_state / (plus_state + minus_state)
+    T, n = temperature, energy_level
+    beta = 1 / T
+    plus_state = g(n + 1) / (np.exp(beta * (n + 1 - mu)) - 1)
+    minus_state = g(n - 1) / (np.exp(beta * (n - 1 - mu)) - 1)
+    return plus_state / (plus_state + minus_state)
 
 
 def get_decrease_probability(mu, temperature, energy_level):
@@ -50,6 +49,5 @@ def get_decrease_probability(mu, temperature, energy_level):
     beta = 1 / T
     plus_state = g(n + 1) / (np.exp(beta * (n + 1 - mu)) - 1)
     minus_state = g(n - 1) / (np.exp(beta * (n - 1 - mu)) - 1)
-
     return minus_state / (plus_state + minus_state)
 
