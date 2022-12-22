@@ -1,4 +1,5 @@
 import dataclasses
+import random
 
 
 @dataclasses.dataclass
@@ -7,6 +8,14 @@ class EnergyLevel:
     expected_value: float
     second_momentum: float
     add_count: int = 0
+
+    @property
+    def variance(self):
+        return self.second_momentum - self.expected_value ** 2
+
+    @property
+    def std(self):
+        return self.variance ** 0.5
 
     def add(self, occurrences):
         self.expected_value = (self.expected_value * self.add_count + occurrences) / (
@@ -25,7 +34,7 @@ class EnergyLevel:
 
 
 @dataclasses.dataclass
-class Attempt:
+class RunData:
     temperature: float
     steps: int = 0
     total_energy_expected_value: float = 0
@@ -53,6 +62,17 @@ class Particles:
         }
         # put all particles in the ground state
         self.energy_level_to_occurrences[0] = number_of_particles
+        self.energy_level_to_probability = {
+            energy_level: self.energy_level_to_occurrences[energy_level]
+            / self.number_of_particles
+            for energy_level in range(max_energy_level + 1)
+        }
+
+    def copy(self, particles):
+        self.max_energy_level = particles.max_energy_level
+        self.number_of_particles = particles.number_of_particles
+        for energy_level, occurrences in particles.energy_level_to_occurrences.items():
+            self.energy_level_to_occurrences[energy_level] = occurrences
 
     @property
     def energy(self):
@@ -62,35 +82,84 @@ class Particles:
         )
 
 
+class Run:
+    def __init__(self, temperature, max_energy_level, number_of_particles):
+        self.temperature = temperature
+        self.particles = Particles(max_energy_level, number_of_particles)
+        self.data = RunData(temperature)
+
+    def run_step(self):
+        energy_level = self._get_random_energy_level()
+        self._update_energy(energy_level)
+        self.data.add(
+            self.particles.energy_level_to_occurrences[0], self.particles.energy
+        )
+
+    def copy(self, run):
+        self.temperature = run.temperature
+        self.particles.copy(run.particles)
+        self.data.copy(run.data)
+
+    def _get_random_energy_level(self):
+        random_number = random.random()
+        for i in range(1, self.particles.max_energy_level + 1):
+            if (
+                self.particles.energy_level_to_probability[i - 1]
+                < random_number
+                <= self.particles.energy_level_to_probability[i]
+            ):
+                return i
+
+    def _update_energy(self, energy_level):
+        pass
+
+
 class Model:
-    def __init__(self, temperature, stop_condition):
+    def __init__(
+        self, number_of_particles, max_energy_level, temperature, stop_condition
+    ):
+        self.number_of_particles = number_of_particles
+        self.max_energy_level = max_energy_level
         self.temperature = temperature
         self.stop_condition = stop_condition
 
-    def run(self, initial_steps=1000) -> Attempt:
-        steps = initial_steps
-        half_attempt = Attempt()
-        full_attempt = Attempt()
+    def run(self, initial_steps=1000) -> Run:
+        steps = initial_steps // 2
+        half_attempt = Run(
+            temperature=self.temperature,
+            max_energy_level=self.max_energy_level,
+            number_of_particles=self.number_of_particles,
+        )
+        full_attempt = Run(
+            temperature=self.temperature,
+            max_energy_level=self.max_energy_level,
+            number_of_particles=self.number_of_particles,
+        )
         while not self._should_stop(half_attempt, full_attempt):
+            steps *= 2
+            half_attempt.copy(full_attempt)
             half_attempt = self._run_attempt(half_attempt, steps // 2)
             full_attempt.copy(half_attempt)
             full_attempt = self._run_attempt(full_attempt, steps // 2)
 
-    def _run_attempt(self, attempt, steps) -> Attempt:
+        return full_attempt
+
+    @staticmethod
+    def _run_attempt(attempt, steps) -> Run:
         for _ in range(steps):
-            zero_energy_occurrences, total_energy = self._run_step()
-            attempt.add(zero_energy_occurrences, total_energy)
+            attempt.run_step()
+
         return attempt
 
     def _should_stop(self, half_attempt, full_attempt) -> bool:
-        if half_attempt.steps == 0 or full_attempt.steps == 0:
+        if half_attempt.data.steps == 0 or full_attempt.data.steps == 0:
             return False
 
         return (
             abs(
-                full_attempt.ground_level.expected_value
-                - half_attempt.ground_level.expected_value
+                full_attempt.data.ground_level.expected_value
+                - half_attempt.data.ground_level.expected_value
             )
-            / full_attempt.ground_level.expected_value
+            / full_attempt.data.ground_level.expected_value
             <= self.stop_condition
         )
