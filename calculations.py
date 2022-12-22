@@ -52,5 +52,5 @@ def get_decrease_probability(mu, temperature, energy_level):
     return minus_state / (plus_state + minus_state)
 
 
-def get_specific_heat_capacity(std_total_energy, temperature):
-    return (std_total_energy / temperature) ** 2
+def get_specific_heat_capacity(std_total_energy, temperature, number_of_particles):
+    return (std_total_energy / temperature) ** 2 / number_of_particles
