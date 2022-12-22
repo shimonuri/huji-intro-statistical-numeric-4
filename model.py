@@ -2,11 +2,10 @@ import dataclasses
 import random
 import calculations
 import constants
-import dataclasses_json
 import logging
 
 
-@dataclasses_json.dataclass_json
+
 @dataclasses.dataclass
 class EnergyLevel:
     level: int
@@ -38,14 +37,12 @@ class EnergyLevel:
         self.add_count = energy_level.add_count
 
 
-@dataclasses_json.dataclass_json
 @dataclasses.dataclass
 class RunData:
     temperature: float
     mu: float
     steps: int = 0
     total_energy_expected_value: float = 0
-    total_energy_second_momentum: float = 0
     ground_level: EnergyLevel = EnergyLevel(0, 0, 0)
 
     @property
@@ -57,9 +54,6 @@ class RunData:
     def add(self, zero_energy_occurrences, total_energy):
         self.total_energy_expected_value = (
             self.total_energy_expected_value * self.steps + total_energy
-        ) / (self.steps + 1)
-        self.total_energy_second_momentum = (
-            self.total_energy_second_momentum * self.steps + total_energy ** 2
         ) / (self.steps + 1)
         self.steps += 1
         self.ground_level.add(zero_energy_occurrences)
@@ -78,7 +72,6 @@ class Particles:
             energy_level: 0 for energy_level in range(max_energy_level + 1)
         }
         self.energy_level_to_occurrences[0] = number_of_particles
-
         self.energy_level_to_probability = {
             energy_level: self._get_energy_level_probability(energy_level)
             for energy_level in range(max_energy_level + 1)
@@ -159,9 +152,6 @@ class Run:
             self._increase_energy(energy_level)
 
     def _increase_energy(self, energy_level):
-        if energy_level == constants.MAX_ENERGY_LEVEL:
-            return
-
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level + 1] += 1
         self.particles.update_probability(energy_level + 1)
@@ -182,8 +172,8 @@ class Model:
             temperature=temperature, number_of_particles=number_of_particles
         )
 
-    def run(self) -> Run:
-        steps = int((self.number_of_particles * 1e4) // 2)
+    def run(self, initial_steps=1000) -> Run:
+        steps = initial_steps // 2
         half_attempt = Run(
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
@@ -217,9 +207,7 @@ class Model:
         if half_attempt.data.steps == 0 or full_attempt.data.steps == 0:
             return False
 
-        if full_attempt.data.ground_level.expected_value == 0:
-            return False
-        should_stop = (
+        return (
             abs(
                 full_attempt.data.ground_level.expected_value
                 - half_attempt.data.ground_level.expected_value
@@ -227,4 +215,3 @@ class Model:
             / full_attempt.data.ground_level.expected_value
             <= self.stop_condition
         )
-        return should_stop
