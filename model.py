@@ -3,6 +3,7 @@ import random
 import calculations
 import constants
 import dataclasses_json
+import logging
 
 
 @dataclasses_json.dataclass_json
@@ -47,6 +48,12 @@ class RunData:
     total_energy_second_momentum: float = 0
     ground_level: EnergyLevel = EnergyLevel(0, 0, 0)
 
+    @property
+    def total_energy_std(self):
+        return (
+            self.total_energy_second_momentum - self.total_energy_expected_value ** 2
+        ) ** 0.5
+
     def add(self, zero_energy_occurrences, total_energy):
         self.total_energy_expected_value = (
             self.total_energy_expected_value * self.steps + total_energy
@@ -70,9 +77,7 @@ class Particles:
         self.energy_level_to_occurrences = {
             energy_level: 0 for energy_level in range(max_energy_level + 1)
         }
-        self.energy_level_to_occurrences[
-            0
-        ] = number_of_particles
+        self.energy_level_to_occurrences[0] = number_of_particles
 
         self.energy_level_to_probability = {
             energy_level: self._get_energy_level_probability(energy_level)
@@ -193,6 +198,7 @@ class Model:
         )
         while not self._should_stop(half_attempt, full_attempt):
             steps *= 2
+            logging.info(f"Running {steps} steps")
             half_attempt.copy(full_attempt)
             half_attempt = self._run_attempt(half_attempt, steps // 2)
             full_attempt.copy(half_attempt)

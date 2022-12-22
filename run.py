@@ -35,11 +35,13 @@ def main(path, plot):
 
 def run_multiple_models(path):
     number_of_particles_to_data = {}
-    for number_of_particles in [1e2]:  # [1e1, 1e2, 1e3, 1e4]:
+    for number_of_particles in [1e1]:  # [1e1, 1e2, 1e3, 1e4]:
         temperatures = _get_temperatures(number_of_particles)
-        ground_state_expected_values, ground_state_stds = multiple_temperature_runs(
-            number_of_particles, temperatures
-        )
+        (
+            ground_state_expected_values,
+            ground_state_stds,
+            total_energy_stds,
+        ) = multiple_temperature_runs(number_of_particles, temperatures)
         plot_ground_state_expected_value(
             temperature_range=temperatures,
             ground_state_expected_values=ground_state_expected_values,
@@ -50,6 +52,7 @@ def run_multiple_models(path):
             "temperatures": temperatures,
             "ground_state_expected_values": ground_state_expected_values,
             "ground_state_stds": ground_state_stds,
+            "total_energy_stds": total_energy_stds,
         }
     plt.show()
     with open(path, "wt") as file:
@@ -61,6 +64,7 @@ def run_multiple_models(path):
 def multiple_temperature_runs(number_of_particles, temperatures):
     ground_state_expected_values = []
     ground_state_stds = []
+    total_energy_stds = []
     for temperature in temperatures:
         logging.info(f"Temperature: {temperature}")
         current_model = model.Model(
@@ -71,11 +75,12 @@ def multiple_temperature_runs(number_of_particles, temperatures):
         result = current_model.run()
         ground_state_expected_values.append(result.data.ground_level.expected_value)
         ground_state_stds.append(result.data.ground_level.std)
-    return ground_state_expected_values, ground_state_stds
+        total_energy_stds.append(result.data.total_energy_std)
+    return ground_state_expected_values, ground_state_stds, total_energy_stds
 
 
 def _get_temperatures(number_of_particles):
-    return [0.2, 5, 10]
+    return [0.2, 5]
     max_temperature = _get_max_temperature(number_of_particles)
     return [
         0.2 * temperature for temperature in range(1, int(max_temperature // 0.2) + 1)
@@ -130,4 +135,4 @@ def plot_ground_state_expected_value(
 
 
 if __name__ == "__main__":
-    run_multiple_models()
+    main()
