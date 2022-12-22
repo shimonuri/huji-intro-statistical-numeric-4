@@ -51,3 +51,6 @@ def get_decrease_probability(mu, temperature, energy_level):
     minus_state = g(n - 1) / (np.exp(beta * (n - 1 - mu)) - 1)
     return minus_state / (plus_state + minus_state)
 
+
+def get_specific_heat_capacity(std_total_energy, temperature):
+    return (std_total_energy / temperature) ** 2
