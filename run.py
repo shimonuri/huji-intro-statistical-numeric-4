@@ -89,7 +89,7 @@ def _get_temperatures(number_of_particles):
 
 def _get_max_temperature(number_of_particles):
     if number_of_particles == 1e4:
-        return 50
+        return 25
 
     return round(5 * np.log10(number_of_particles))
 
