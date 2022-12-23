@@ -160,6 +160,8 @@ class Run:
             self._increase_energy(energy_level)
 
     def _increase_energy(self, energy_level):
+        if energy_level == self.particles.max_energy_level:
+            return
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level + 1] += 1
         self.particles.update_probability(energy_level + 1)
