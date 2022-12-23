@@ -77,7 +77,6 @@ class Particles:
             energy_level: self._get_energy_level_probability(energy_level)
             for energy_level in range(max_energy_level + 1)
         }
-        self.energy_level_to_probability[-1] = 0
 
     def __str__(self):
         return str(self.energy_level_to_occurrences)
@@ -96,16 +95,12 @@ class Particles:
         )
 
     def update_probability(self, energy_level):
-        for el in range(energy_level + 1):
-            self.energy_level_to_probability[el] = self._get_energy_level_probability(
-                el
-            )
+        self.energy_level_to_probability[
+            energy_level
+        ] = self._get_energy_level_probability(energy_level)
 
     def _get_energy_level_probability(self, energy_level):
-        return sum(
-            self.energy_level_to_occurrences[el] / self.number_of_particles
-            for el in range(energy_level + 1)
-        )
+        return self.energy_level_to_occurrences[energy_level] / self.number_of_particles
 
     def _set_initial_condition(self, max_energy_level, number_of_particles):
         self.energy_level_to_occurrences = {
@@ -137,16 +132,10 @@ class Run:
         self.data.copy(run.data)
 
     def _get_random_energy_level(self):
-        random_number = random.random()
-        for i in range(0, self.particles.max_energy_level + 1):
-            if (
-                self.particles.energy_level_to_probability[i - 1]
-                < random_number
-                <= self.particles.energy_level_to_probability[i]
-            ):
-                return i
-
-        raise RuntimeError("Could not determine energy level")
+        energy_level = random.choices(
+            *zip(*self.particles.energy_level_to_probability.items())
+        )
+        return energy_level[0]
 
     def _update_energy(self, energy_level):
         random_number = random.random()
@@ -160,13 +149,17 @@ class Run:
             self._increase_energy(energy_level)
 
     def _increase_energy(self, energy_level):
+        if energy_level == self.particles.max_energy_level:
+            return
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level + 1] += 1
         self.particles.update_probability(energy_level + 1)
+        self.particles.update_probability(energy_level)
 
     def _decrease_energy(self, energy_level):
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level - 1] += 1
+        self.particles.update_probability(energy_level - 1)
         self.particles.update_probability(energy_level)
 
 
