@@ -178,7 +178,7 @@ class Model:
         logging.info(f"mu: {self.mu}")
 
     def run(self) -> Run:
-        steps = self.number_of_particles * 10e4
+        steps = int(self.number_of_particles * 10e4)
         half_attempt = Run(
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
