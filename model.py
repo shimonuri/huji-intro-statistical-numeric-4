@@ -71,8 +71,8 @@ class RunData:
 class Particles:
     def __init__(self, max_energy_level, number_of_particles):
         self.max_energy_level = max_energy_level
-        self.number_of_particles = number_of_particles
-        self._set_initial_condition(max_energy_level, number_of_particles)
+        self.number_of_particles = int(number_of_particles)
+        self._set_initial_condition(max_energy_level, self.number_of_particles)
         self.energy_level_to_probability = {
             energy_level: self._get_energy_level_probability(energy_level)
             for energy_level in range(max_energy_level + 1)
@@ -175,7 +175,7 @@ class Model:
         logging.info(f"mu: {self.mu}")
 
     def run(self) -> Run:
-        steps = int(self.number_of_particles * 1e3 // 2)
+        steps = int(self.number_of_particles * 1e4 // 2)
         half_attempt = Run(
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
