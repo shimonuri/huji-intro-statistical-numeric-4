@@ -193,7 +193,7 @@ class Model:
         )
         while not self._should_stop(half_attempt, full_attempt):
             steps *= 2
-            logging.info(f"Running {steps} steps")
+            logging.info(f"Running {steps:.0e} steps")
             half_attempt.copy(full_attempt)
             half_attempt = self._run_attempt(half_attempt, steps // 2)
             full_attempt.copy(half_attempt)
@@ -204,8 +204,8 @@ class Model:
     @staticmethod
     def _run_attempt(attempt, steps) -> Run:
         for i in range(steps):
-            if i % int(round(steps // 100)) == 0:
-                logging.info(f"Currently in Step: {i}")
+            if i % int(round(2 * steps // 100)) == 0:
+                logging.info(f"Currently in Step: {i:.0e}")
 
             attempt.run_step()
 
