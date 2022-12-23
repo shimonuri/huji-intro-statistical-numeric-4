@@ -15,10 +15,14 @@ plt.rcParams.update({"font.size": 16})
 
 @click.command()
 @click.argument("path", type=click.Path(exists=False))
+@click.option("--particles-power", type=int, default=None)
 @click.option("--plot", is_flag=True, default=False)
-def main(path, plot):
+def main(path, particles_power, plot):
     if not plot:
-        run_multiple_models(path)
+        if particles_power is None:
+            run_multiple_models(path)
+        else:
+            run_multiple_models(path, numbers_of_particles=[10 ** particles_power])
     else:
         with open(path, "rt") as file:
             data = json.load(file)
@@ -34,9 +38,12 @@ def main(path, plot):
             plt.show()
 
 
-def run_multiple_models(path):
+def run_multiple_models(path, numbers_of_particles=None):
+    if numbers_of_particles is None:
+        numbers_of_particles = [1e1, 1e2, 1e3, 1e4]
+
     number_of_particles_to_data = {}
-    for number_of_particles in [1e1, 1e2, 1e3, 1e4]:
+    for number_of_particles in numbers_of_particles:
         logging.info(f"Number of particles: {number_of_particles}")
         temperatures = _get_temperatures(number_of_particles)
         (
@@ -67,7 +74,9 @@ def multiple_temperature_runs(number_of_particles, temperatures):
     ground_state_stds = []
     total_energy_stds = []
     for temperature in temperatures:
-        logging.info(f"Temperature: {temperature}")
+        logging.info(
+            f"Number of Particles: {number_of_particles}, Temperature: {temperature}"
+        )
         current_model = model.Model(
             number_of_particles=number_of_particles,
             temperature=temperature,
@@ -134,12 +143,18 @@ def plot_ground_state_expected_value(
     plt.legend()
 
 
-def plot_specific_heat_capacity(temperature_range, number_of_particles, total_energy_std):
+def plot_specific_heat_capacity(
+    temperature_range, number_of_particles, total_energy_std
+):
 
-    cv_list = [calculations.get_specific_heat_capacity(temperature=temperature,
-                                                       number_of_particles=number_of_particles,
-                                                       total_energy_std=total_energy_std)
-               for temperature in temperature_range]
+    cv_list = [
+        calculations.get_specific_heat_capacity(
+            temperature=temperature,
+            number_of_particles=number_of_particles,
+            total_energy_std=total_energy_std,
+        )
+        for temperature in temperature_range
+    ]
     plt.plot(temperature_range, cv_list)
     plt.xlabel(r"$T$")
     plt.ylabel(r"$c_{v}\left(T\right)$")
