@@ -66,7 +66,7 @@ def run_multiple_models(path, numbers_of_particles=None, fast=False):
             "temperatures": temperatures,
             "ground_state_expected_values": ground_state_expected_values,
             "ground_state_stds": ground_state_stds,
-            "total_energy": total_energy,
+            "total_energy_expected_values": total_energy,
             "total_energy_stds": total_energy_stds,
         }
         with open(path, "wt") as file:
