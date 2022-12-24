@@ -176,5 +176,16 @@ def plot_specific_heat_capacity(
     plt.legend()
 
 
+def plot_critical_temperature(number_of_particles_list, ground_state_expected_values_list, temperature_range_list):
+    critical_temperate = [calculations.get_critical_temperature(
+        temperature_range=temperature_range_list[index],
+        ground_state_expected_values=ground_state_expected_values_list[index],
+        number_of_particles=number_of_particles_list[index])
+        for index in number_of_particles_list]
+    plt.plot(number_of_particles_list, critical_temperate)
+    plt.xlabel(r"$N$")
+    plt.ylabel(r"$T_{C}\left(N\right)$")
+
+
 if __name__ == "__main__":
     main()
