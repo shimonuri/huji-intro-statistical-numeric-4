@@ -3,6 +3,7 @@ import random
 import calculations
 import constants
 import logging
+import numpy as np
 
 
 @dataclasses.dataclass
@@ -90,9 +91,6 @@ class Particles:
             for energy_level, occurrences in self.energy_level_to_occurrences.items()
         )
 
-    def _get_energy_level_probability(self, energy_level):
-        return self.energy_level_to_occurrences[energy_level] / self.number_of_particles
-
     def _set_initial_condition(self, max_energy_level, number_of_particles):
         self.energy_level_to_occurrences = {
             energy_level: 0 for energy_level in range(max_energy_level + 1)
@@ -108,6 +106,12 @@ class Run:
         self.data = RunData(
             temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0)
         )
+        self.energy_level_to_decrease_probability = {
+            energy_level: calculations.get_decrease_probability(
+                mu=mu, temperature=self.temperature, energy_level=energy_level
+            )
+            for energy_level in range(max_energy_level + 1)
+        }
 
     def __str__(self):
         return str(self.particles)
@@ -132,11 +136,7 @@ class Run:
 
     def _update_energy(self, energy_level):
         random_number = random.random()
-        if random_number <= calculations.get_decrease_probability(
-            mu=self.data.mu,
-            temperature=self.data.temperature,
-            energy_level=energy_level,
-        ):
+        if random_number <= self.energy_level_to_decrease_probability[energy_level]:
             self._decrease_energy(energy_level)
         else:
             self._increase_energy(energy_level)
@@ -148,6 +148,8 @@ class Run:
         self.particles.energy_level_to_occurrences[energy_level + 1] += 1
 
     def _decrease_energy(self, energy_level):
+        if energy_level == 0:
+            return
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level - 1] += 1
 
@@ -203,10 +205,12 @@ class Model:
             return False
 
         return (
-            abs(
-                full_attempt.data.ground_level.expected_value
-                - half_attempt.data.ground_level.expected_value
+            np.divide(
+                np.abs(
+                    full_attempt.data.ground_level.expected_value
+                    - half_attempt.data.ground_level.expected_value
+                ),
+                full_attempt.data.ground_level.expected_value,
             )
-            / full_attempt.data.ground_level.expected_value
             <= self.stop_condition
         )

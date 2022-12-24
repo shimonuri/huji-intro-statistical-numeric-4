@@ -92,7 +92,7 @@ def multiple_temperature_runs(number_of_particles, temperatures):
 def _get_temperatures(number_of_particles):
     max_temperature = _get_max_temperature(number_of_particles)
     return [
-        0.2 * temperature for temperature in range(1, int(max_temperature // 0.2) + 1)
+        0.2 * temperature for temperature in range(1, int(max_temperature // 0.2) + 2)
     ]
 
 
