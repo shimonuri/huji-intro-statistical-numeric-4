@@ -51,7 +51,7 @@ class RunData:
             self.total_energy_second_momentum - self.total_energy_expected_value ** 2
         ) ** 0.5
 
-    def add(self, zero_energy_occurrences, total_energy):
+    def add(self, ground_state_occurrences, total_energy):
         self.total_energy_expected_value = (
             self.total_energy_expected_value * self.steps + total_energy
         ) / (self.steps + 1)
@@ -59,7 +59,7 @@ class RunData:
             self.total_energy_second_momentum * self.steps + total_energy ** 2
         ) / (self.steps + 1)
         self.steps += 1
-        self.ground_level.add(zero_energy_occurrences)
+        self.ground_level.add(ground_state_occurrences)
 
     def copy(self, attempt):
         self.steps = attempt.steps
@@ -164,7 +164,7 @@ class Model:
         logging.info(f"mu: {self.mu}")
 
     def run(self) -> Run:
-        steps = int(self.number_of_particles * 1e4 // 2)
+        steps = int(self.number_of_particles * 1e2 // 2)
         half_attempt = Run(
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
