@@ -105,7 +105,9 @@ class Run:
     def __init__(self, temperature, max_energy_level, number_of_particles, mu):
         self.temperature = temperature
         self.particles = Particles(max_energy_level, number_of_particles)
-        self.data = RunData(temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0))
+        self.data = RunData(
+            temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0)
+        )
 
     def __str__(self):
         return str(self.particles)
@@ -185,11 +187,12 @@ class Model:
 
         return full_attempt
 
-    @staticmethod
-    def _run_attempt(attempt, steps) -> Run:
+    def _run_attempt(self, attempt, steps) -> Run:
         for i in range(steps):
             if i % int(round(2 * steps // 5)) == 0:
-                logging.info(f"Currently in Step: {i:.1e} / {steps:.1e}")
+                logging.info(
+                    f"Currently in Step: {i:.1e} / {steps:.1e}, (Temperature={self.temperature})"
+                )
 
             attempt.run_step()
 
