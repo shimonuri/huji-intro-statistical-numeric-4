@@ -201,7 +201,7 @@ class Model:
     @staticmethod
     def _run_attempt(attempt, steps) -> Run:
         for i in range(steps):
-            if i % int(round(2 * steps // 100)) == 0:
+            if i % int(round(2 * steps // 10)) == 0:
                 logging.info(f"Currently in Step: {i:.1e}")
 
             attempt.run_step()
