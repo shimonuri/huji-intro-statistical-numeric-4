@@ -3,6 +3,7 @@ import random
 import calculations
 import constants
 import logging
+import numpy as np
 
 
 @dataclasses.dataclass
@@ -51,7 +52,7 @@ class RunData:
             self.total_energy_second_momentum - self.total_energy_expected_value ** 2
         ) ** 0.5
 
-    def add(self, zero_energy_occurrences, total_energy):
+    def add(self, ground_state_occurrences, total_energy):
         self.total_energy_expected_value = (
             self.total_energy_expected_value * self.steps + total_energy
         ) / (self.steps + 1)
@@ -59,7 +60,7 @@ class RunData:
             self.total_energy_second_momentum * self.steps + total_energy ** 2
         ) / (self.steps + 1)
         self.steps += 1
-        self.ground_level.add(zero_energy_occurrences)
+        self.ground_level.add(ground_state_occurrences)
 
     def copy(self, attempt):
         self.steps = attempt.steps
@@ -73,11 +74,6 @@ class Particles:
         self.max_energy_level = max_energy_level
         self.number_of_particles = int(number_of_particles)
         self._set_initial_condition(max_energy_level, self.number_of_particles)
-        self.energy_level_to_probability = {
-            energy_level: self._get_energy_level_probability(energy_level)
-            for energy_level in range(max_energy_level + 1)
-        }
-        self.energy_level_to_probability[-1] = 0
 
     def __str__(self):
         return str(self.energy_level_to_occurrences)
@@ -95,18 +91,6 @@ class Particles:
             for energy_level, occurrences in self.energy_level_to_occurrences.items()
         )
 
-    def update_probability(self, energy_level):
-        for el in range(energy_level + 1):
-            self.energy_level_to_probability[el] = self._get_energy_level_probability(
-                el
-            )
-
-    def _get_energy_level_probability(self, energy_level):
-        return sum(
-            self.energy_level_to_occurrences[el] / self.number_of_particles
-            for el in range(energy_level + 1)
-        )
-
     def _set_initial_condition(self, max_energy_level, number_of_particles):
         self.energy_level_to_occurrences = {
             energy_level: 0 for energy_level in range(max_energy_level + 1)
@@ -119,7 +103,15 @@ class Run:
     def __init__(self, temperature, max_energy_level, number_of_particles, mu):
         self.temperature = temperature
         self.particles = Particles(max_energy_level, number_of_particles)
-        self.data = RunData(temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0))
+        self.data = RunData(
+            temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0)
+        )
+        self.energy_level_to_decrease_probability = {
+            energy_level: calculations.get_decrease_probability(
+                mu=mu, temperature=self.temperature, energy_level=energy_level
+            )
+            for energy_level in range(max_energy_level + 1)
+        }
 
     def __str__(self):
         return str(self.particles)
@@ -137,24 +129,14 @@ class Run:
         self.data.copy(run.data)
 
     def _get_random_energy_level(self):
-        random_number = random.random()
-        for i in range(0, self.particles.max_energy_level + 1):
-            if (
-                self.particles.energy_level_to_probability[i - 1]
-                < random_number
-                <= self.particles.energy_level_to_probability[i]
-            ):
-                return i
-
-        raise RuntimeError("Could not determine energy level")
+        energy_level = random.choices(
+            *zip(*self.particles.energy_level_to_occurrences.items())
+        )
+        return energy_level[0]
 
     def _update_energy(self, energy_level):
         random_number = random.random()
-        if random_number <= calculations.get_decrease_probability(
-            mu=self.data.mu,
-            temperature=self.data.temperature,
-            energy_level=energy_level,
-        ):
+        if random_number <= self.energy_level_to_decrease_probability[energy_level]:
             self._decrease_energy(energy_level)
         else:
             self._increase_energy(energy_level)
@@ -164,12 +146,12 @@ class Run:
             return
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level + 1] += 1
-        self.particles.update_probability(energy_level + 1)
 
     def _decrease_energy(self, energy_level):
+        if energy_level == 0:
+            return
         self.particles.energy_level_to_occurrences[energy_level] -= 1
         self.particles.energy_level_to_occurrences[energy_level - 1] += 1
-        self.particles.update_probability(energy_level)
 
 
 class Model:
@@ -184,7 +166,7 @@ class Model:
         logging.info(f"mu: {self.mu}")
 
     def run(self) -> Run:
-        steps = int(self.number_of_particles * 1e3 // 2)
+        steps = int(self.number_of_particles * 1e2 // 2)
         half_attempt = Run(
             temperature=self.temperature,
             max_energy_level=self.max_energy_level,
@@ -207,11 +189,12 @@ class Model:
 
         return full_attempt
 
-    @staticmethod
-    def _run_attempt(attempt, steps) -> Run:
+    def _run_attempt(self, attempt, steps) -> Run:
         for i in range(steps):
             if i % int(round(2 * steps // 5)) == 0:
-                logging.info(f"Currently in Step: {i:.1e} / {steps:.1e}")
+                logging.info(
+                    f"Currently in Step: {i:.1e} / {steps:.1e}, (Temperature={self.temperature})"
+                )
 
             attempt.run_step()
 
@@ -222,10 +205,12 @@ class Model:
             return False
 
         return (
-            abs(
-                full_attempt.data.ground_level.expected_value
-                - half_attempt.data.ground_level.expected_value
+            np.divide(
+                np.abs(
+                    full_attempt.data.ground_level.expected_value
+                    - half_attempt.data.ground_level.expected_value
+                ),
+                full_attempt.data.ground_level.expected_value,
             )
-            / full_attempt.data.ground_level.expected_value
             <= self.stop_condition
         )
