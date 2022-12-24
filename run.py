@@ -17,12 +17,13 @@ plt.rcParams.update({"font.size": 16})
 @click.argument("path", type=click.Path(exists=False))
 @click.option("--particles-power", type=int, default=None)
 @click.option("--plot", is_flag=True, default=False)
-def main(path, particles_power, plot):
+@click.option("--fast", is_flag=True, default=False)
+def main(path, particles_power, plot, fast):
     if not plot:
         if particles_power is None:
-            run_multiple_models(path)
+            run_multiple_models(path, fast=fast)
         else:
-            run_multiple_models(path, numbers_of_particles=[10 ** particles_power])
+            run_multiple_models(path, numbers_of_particles=[10 ** particles_power], fast=fast)
     else:
         with open(path, "rt") as file:
             data = json.load(file)
@@ -38,17 +39,21 @@ def main(path, particles_power, plot):
             plt.show()
 
 
-def run_multiple_models(path, numbers_of_particles=None):
+def run_multiple_models(path, numbers_of_particles=None, fast=False):
     if numbers_of_particles is None:
         numbers_of_particles = [1e1, 1e2, 1e3, 1e4]
 
     number_of_particles_to_data = {}
     for number_of_particles in numbers_of_particles:
         logging.info(f"Number of particles: {number_of_particles}")
-        temperatures = _get_temperatures(number_of_particles)
+        if fast:
+            temperatures = [0.2]
+        else:
+            temperatures = _get_temperatures(number_of_particles)
         (
             ground_state_expected_values,
             ground_state_stds,
+            total_energy,
             total_energy_stds,
         ) = multiple_temperature_runs(number_of_particles, temperatures)
         plot_ground_state_expected_value(
@@ -61,6 +66,7 @@ def run_multiple_models(path, numbers_of_particles=None):
             "temperatures": temperatures,
             "ground_state_expected_values": ground_state_expected_values,
             "ground_state_stds": ground_state_stds,
+            "total_energy": total_energy,
             "total_energy_stds": total_energy_stds,
         }
         with open(path, "wt") as file:
@@ -72,6 +78,7 @@ def run_multiple_models(path, numbers_of_particles=None):
 def multiple_temperature_runs(number_of_particles, temperatures):
     ground_state_expected_values = []
     ground_state_stds = []
+    total_energy = []
     total_energy_stds = []
     for temperature in temperatures:
         logging.info(
@@ -86,7 +93,8 @@ def multiple_temperature_runs(number_of_particles, temperatures):
         ground_state_expected_values.append(result.data.ground_level.expected_value)
         ground_state_stds.append(result.data.ground_level.std)
         total_energy_stds.append(result.data.total_energy_std)
-    return ground_state_expected_values, ground_state_stds, total_energy_stds
+        total_energy.append(result.data.total_energy_expected_value)
+    return ground_state_expected_values, ground_state_stds, total_energy, total_energy_stds
 
 
 def _get_temperatures(number_of_particles):
