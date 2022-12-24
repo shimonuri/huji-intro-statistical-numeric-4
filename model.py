@@ -40,10 +40,10 @@ class EnergyLevel:
 class RunData:
     temperature: float
     mu: float
+    ground_level: EnergyLevel
     steps: int = 0
     total_energy_second_momentum: float = 0
     total_energy_expected_value: float = 0
-    ground_level: EnergyLevel = EnergyLevel(0, 0, 0)
 
     @property
     def total_energy_std(self):
@@ -71,8 +71,8 @@ class RunData:
 class Particles:
     def __init__(self, max_energy_level, number_of_particles):
         self.max_energy_level = max_energy_level
-        self.number_of_particles = number_of_particles
-        self._set_initial_condition(max_energy_level, number_of_particles)
+        self.number_of_particles = int(number_of_particles)
+        self._set_initial_condition(max_energy_level, self.number_of_particles)
         self.energy_level_to_probability = {
             energy_level: self._get_energy_level_probability(energy_level)
             for energy_level in range(max_energy_level + 1)
@@ -119,7 +119,7 @@ class Run:
     def __init__(self, temperature, max_energy_level, number_of_particles, mu):
         self.temperature = temperature
         self.particles = Particles(max_energy_level, number_of_particles)
-        self.data = RunData(temperature=temperature, mu=mu)
+        self.data = RunData(temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0))
 
     def __str__(self):
         return str(self.particles)
