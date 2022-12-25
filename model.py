@@ -23,15 +23,15 @@ class EnergyLevel:
 
     @property
     def variance(self):
-        return self.second_momentum - np.square(self.expected_value)
+        return self.second_momentum - self.expected_value ** 2
 
     @property
     def std(self):
-        return np.sqrt(self.variance)
+        return self.variance ** 0.5
 
     def add(self, occurrences):
         self.sum += occurrences
-        self.square_sum += np.square(occurrences)
+        self.square_sum += occurrences ** 2
         self.add_count += 1
 
     def copy(self, energy_level):
@@ -47,8 +47,8 @@ class RunData:
     mu: float
     ground_level: EnergyLevel
     steps: int = 0
-    total_energy_sum: float = 0
-    total_energy_square_sum: float = 0
+    total_energy_sum: int = 0
+    total_energy_square_sum: int = 0
 
     @property
     def total_energy_expected_value(self):
@@ -60,13 +60,11 @@ class RunData:
 
     @property
     def total_energy_std(self):
-        return np.sqrt(
-            self.total_energy_second_momentum - np.square(self.total_energy_expected_value)
-        )
+        return (self.total_energy_second_momentum - self.total_energy_expected_value ** 2) ** 0.5
 
     def add(self, ground_state_occurrences, total_energy):
         self.total_energy_sum += total_energy
-        self.total_energy_square_sum += np.square(total_energy)
+        self.total_energy_square_sum += total_energy ** 2
         self.steps += 1
         self.ground_level.add(ground_state_occurrences)
 
