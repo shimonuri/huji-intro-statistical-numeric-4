@@ -15,15 +15,15 @@ plt.rcParams.update({"font.size": 16})
 
 @click.command()
 @click.argument("path", type=click.Path(exists=False))
-@click.option("--particles-power", type=int, default=None)
+@click.option("--particles", type=int, default=None)
 @click.option("--plot", is_flag=True, default=False)
 @click.option("--fast", is_flag=True, default=False)
-def main(path, particles_power, plot, fast):
+def main(path, particles, plot, fast):
     if not plot:
-        if particles_power is None:
+        if particles is None:
             run_multiple_models(path, fast=fast)
         else:
-            run_multiple_models(path, numbers_of_particles=[10 ** particles_power], fast=fast)
+            run_multiple_models(path, numbers_of_particles=[particles], fast=fast)
     else:
         with open(path, "rt") as file:
             data = json.load(file)
