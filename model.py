@@ -9,9 +9,17 @@ import numpy as np
 @dataclasses.dataclass
 class EnergyLevel:
     level: int
-    expected_value: float
-    second_momentum: float
+    sum: float = 0
+    square_sum: float = 0
     add_count: int = 0
+
+    @property
+    def expected_value(self):
+        return self.sum / self.add_count
+
+    @property
+    def second_momentum(self):
+        return self.square_sum / self.add_count
 
     @property
     def variance(self):
@@ -22,18 +30,14 @@ class EnergyLevel:
         return self.variance ** 0.5
 
     def add(self, occurrences):
-        self.expected_value = (self.expected_value * self.add_count + occurrences) / (
-            self.add_count + 1
-        )
-        self.second_momentum = (
-            self.second_momentum * self.add_count + occurrences ** 2
-        ) / (self.add_count + 1)
+        self.sum += occurrences
+        self.square_sum += np.square(occurrences)
         self.add_count += 1
 
     def copy(self, energy_level):
         self.level = energy_level.level
-        self.expected_value = energy_level.expected_value
-        self.second_momentum = energy_level.second_momentum
+        self.sum = energy_level.sum
+        self.square_sum = energy_level.square_sum
         self.add_count = energy_level.add_count
 
 
@@ -43,8 +47,16 @@ class RunData:
     mu: float
     ground_level: EnergyLevel
     steps: int = 0
-    total_energy_second_momentum: float = 0
-    total_energy_expected_value: float = 0
+    total_energy_sum: float = 0
+    total_energy_square_sum: float = 0
+
+    @property
+    def total_energy_expected_value(self):
+        return self.total_energy_sum / self.steps
+
+    @property
+    def total_energy_second_momentum(self):
+        return self.total_energy_square_sum / self.steps
 
     @property
     def total_energy_std(self):
@@ -53,20 +65,16 @@ class RunData:
         ) ** 0.5
 
     def add(self, ground_state_occurrences, total_energy):
-        self.total_energy_expected_value = (
-            self.total_energy_expected_value * self.steps + total_energy
-        ) / (self.steps + 1)
-        self.total_energy_second_momentum = (
-            self.total_energy_second_momentum * self.steps + total_energy ** 2
-        ) / (self.steps + 1)
+        self.total_energy_sum += total_energy
+        self.total_energy_square_sum += np.square(total_energy)
         self.steps += 1
         self.ground_level.add(ground_state_occurrences)
 
     def copy(self, attempt):
         self.steps = attempt.steps
-        self.total_energy_expected_value = attempt.total_energy_expected_value
+        self.total_energy_sum = attempt.total_energy_sum
         self.ground_level.copy(attempt.ground_level)
-        self.total_energy_second_momentum = attempt.total_energy_second_momentum
+        self.total_energy_square_sum = attempt.total_energy_square_sum
 
 
 class Particles:
@@ -104,7 +112,7 @@ class Run:
         self.temperature = temperature
         self.particles = Particles(max_energy_level, number_of_particles)
         self.data = RunData(
-            temperature=temperature, mu=mu, ground_level=EnergyLevel(0, 0, 0)
+            temperature=temperature, mu=mu, ground_level=EnergyLevel(level=0)
         )
         self.energy_level_to_decrease_probability = {
             energy_level: calculations.get_decrease_probability(
