@@ -37,6 +37,13 @@ def main(path, particles_power, plot, fast):
                     number_of_particles=int(float(number_of_particles)),
                 )
             plt.show()
+            for number_of_particles, number_of_particles_data in data.items():
+                plot_specific_heat_capacity(
+                    temperature_range=number_of_particles_data["temperatures"],
+                    number_of_particles=int(float(number_of_particles)),
+                    total_energy_std=number_of_particles_data["total_energy_stds"]
+                )
+            plt.show()
 
 
 def run_multiple_models(path, numbers_of_particles=None, fast=False):
@@ -159,7 +166,7 @@ def plot_specific_heat_capacity(
         calculations.get_specific_heat_capacity(
             temperature=temperature,
             number_of_particles=number_of_particles,
-            total_energy_std=total_energy_std,
+            total_energy_std=total_energy_std[temperature_range.index(temperature)],
         )
         for temperature in temperature_range
     ]
@@ -167,6 +174,17 @@ def plot_specific_heat_capacity(
     plt.xlabel(r"$T$")
     plt.ylabel(r"$c_{v}\left(T\right)$")
     plt.legend()
+
+
+def plot_critical_temperature(number_of_particles_list, ground_state_expected_values_list, temperature_range_list):
+    critical_temperate = [calculations.get_critical_temperature(
+        temperature_range=temperature_range_list[index],
+        ground_state_expected_values=ground_state_expected_values_list[index],
+        number_of_particles=number_of_particles_list[index])
+        for index in number_of_particles_list]
+    plt.plot(number_of_particles_list, critical_temperate)
+    plt.xlabel(r"$N$")
+    plt.ylabel(r"$T_{C}\left(N\right)$")
 
 
 if __name__ == "__main__":

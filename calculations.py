@@ -53,3 +53,14 @@ def get_decrease_probability(mu, temperature, energy_level):
 
 def get_specific_heat_capacity(total_energy_std, temperature, number_of_particles):
     return (total_energy_std / temperature) ** 2 / number_of_particles
+
+
+def get_critical_temperature(temperature_range, ground_state_expected_values, number_of_particles):
+    x = temperature_range
+    y = [
+        expected_value / number_of_particles
+        for expected_value in ground_state_expected_values
+    ]
+    for index, temperature in enumerate(x):
+        if y[index] < 0.1:
+            return temperature
