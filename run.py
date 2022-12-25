@@ -6,6 +6,8 @@ import click
 import logging
 import json
 import multiprocessing
+import signal
+import os
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -25,7 +27,9 @@ def main(path, particles, plot, fast, processes):
         if particles is None:
             run_multiple_models(path, fast=fast, processes=processes)
         else:
-            run_multiple_models(path, numbers_of_particles=[particles], fast=fast, processes=processes)
+            run_multiple_models(
+                path, numbers_of_particles=[particles], fast=fast, processes=processes
+            )
     else:
         with open(path, "rt") as file:
             data = json.load(file)
@@ -88,15 +92,31 @@ def run_multiple_models(path, numbers_of_particles=None, fast=False, processes=1
             )
 
 
+def _initialize_process(parent_pid):
+    def _handle_sigint():
+        os.kill(parent_pid, signal.SIGINT)
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+
+
 def multiple_temperature_runs(number_of_particles, temperatures, processes):
     ground_state_expected_values = []
     ground_state_stds = []
     total_energy = []
     total_energy_stds = []
-    with multiprocessing.Pool(processes=processes) as pool:
-        results = pool.starmap(
-            _run_model, [(number_of_particles, temperature) for temperature in temperatures]
-        )
+    try:
+        with multiprocessing.Pool(
+            processes=processes, initializer=_initialize_process, initargs=[os.getpid()]
+        ) as pool:
+            results = pool.starmap(
+                _run_model,
+                [(number_of_particles, temperature) for temperature in temperatures],
+            )
+    except KeyboardInterrupt:
+        logging.info("Keyboard interrupt received, terminating...")
+        pool.terminate()
+        pool.join()
+        raise
 
     for result in results:
         ground_state_expected_values.append(result.data.ground_level.expected_value)
@@ -110,6 +130,7 @@ def multiple_temperature_runs(number_of_particles, temperatures, processes):
         total_energy_stds,
     )
 
+
 def _run_model(number_of_particles, temperature):
     current_model = model.Model(
         number_of_particles=number_of_particles,
@@ -118,6 +139,8 @@ def _run_model(number_of_particles, temperature):
     )
     result = current_model.run()
     return result
+
+
 def _get_temperatures(number_of_particles):
     max_temperature = _get_max_temperature(number_of_particles)
     return [
