@@ -38,7 +38,45 @@ def main(path, particles, plot, fast, processes):
 
 
 def plot_data(data):
-    for number_of_particles, number_of_particles_data in data.items():
+    _plot_ground_states_with_stds(data)
+    _plot_ground_states_with_no_stds(data)
+    plot_critical_temperature(data)
+    _plot_heat_capacities(data)
+
+
+def _plot_heat_capacities(data):
+    if len(data) == 4:
+        fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+        fig.tight_layout(pad=3.0)
+    else:
+        axs = None
+    for i, (number_of_particles, number_of_particles_data) in enumerate(data.items()):
+        critical_temperature = calculations.get_critical_temperature(
+            temperature_range=number_of_particles_data["temperatures"],
+            ground_state_expected_values=number_of_particles_data[
+                "ground_state_expected_values"
+            ],
+            number_of_particles=int(number_of_particles),
+        )
+        plot_specific_heat_capacity(
+            total_energies=number_of_particles_data["total_energy_expected_values"],
+            temperatures=number_of_particles_data["temperatures"],
+            number_of_particles=int(number_of_particles),
+            critical_temperature=critical_temperature,
+            ax=None if axs is None else axs.flatten()[i],
+        )
+    plt.show()
+
+
+def _plot_ground_states_with_no_stds(data):
+    if len(data) == 4:
+        fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+        fig.tight_layout(pad=3.0)
+    else:
+        axs = None
+
+    for i, (number_of_particles, number_of_particles_data) in enumerate(data.items()):
+        # create 4 subplots
         plot_ground_state_expected_value(
             temperature_range=number_of_particles_data["temperatures"],
             ground_state_expected_values=number_of_particles_data[
@@ -46,13 +84,30 @@ def plot_data(data):
             ],
             ground_state_stds=number_of_particles_data["ground_state_stds"],
             number_of_particles=int(float(number_of_particles)),
+            ax=None if axs is None else axs.flatten()[i],
+            add_errorbar=False,
         )
     plt.show()
-    for number_of_particles, number_of_particles_data in data.items():
-        plot_specific_heat_capacity(
+
+
+def _plot_ground_states_with_stds(data):
+    if len(data) == 4:
+        fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+        fig.tight_layout(pad=3.0)
+    else:
+        axs = None
+
+    for i, (number_of_particles, number_of_particles_data) in enumerate(data.items()):
+        # create 4 subplots
+        plot_ground_state_expected_value(
             temperature_range=number_of_particles_data["temperatures"],
+            ground_state_expected_values=number_of_particles_data[
+                "ground_state_expected_values"
+            ],
+            ground_state_stds=number_of_particles_data["ground_state_stds"],
             number_of_particles=int(float(number_of_particles)),
-            total_energy_std=number_of_particles_data["total_energy_stds"],
+            ax=None if axs is None else axs.flatten()[i],
+            add_errorbar=True,
         )
     plt.show()
 
@@ -67,7 +122,7 @@ def run_multiple_models(path, numbers_of_particles=None, fast=False, processes=1
         if fast:
             temperatures = [0.2, 1]
         else:
-            temperatures = _get_temperatures(number_of_particles, step_side=0.4)
+            temperatures = _get_temperatures(number_of_particles, step_side=0.2)
         (
             ground_state_expected_values,
             ground_state_stds,
@@ -167,7 +222,8 @@ def _run_model(number_of_particles, temperature, path):
 def _get_temperatures(number_of_particles, step_side=0.2):
     max_temperature = _get_max_temperature(number_of_particles)
     return [
-        step_side * temperature for temperature in range(1, int(max_temperature // step_side) + 2)
+        step_side * temperature
+        for temperature in range(1, int(max_temperature // step_side) + 2)
     ]
 
 
@@ -192,64 +248,79 @@ def plot_ground_state_expected_value(
     ground_state_expected_values,
     number_of_particles,
     ground_state_stds,
+    add_errorbar=True,
+    ax=None,
 ):
+    if ax is None:
+        ax = plt.gca()
+
     x = temperature_range
     y = [
         expected_value / number_of_particles
         for expected_value in ground_state_expected_values
     ]
-    plt.plot(x, y, label=f"number of particles: {number_of_particles}")
-    # plt.errorbar(
-    #     x,
-    #     y,
-    #     yerr=[
-    #         std / expected_value
-    #         for expected_value, std in zip(
-    #             ground_state_expected_values, ground_state_stds
-    #         )
-    #     ],
-    #     fmt="none",
-    #     ecolor="black",
-    #     elinewidth=0.5,
-    #     capsize=2,
-    # )
-    plt.xlabel(r"$T$")
-    plt.ylabel(r"$\left\langle N_{0}\right\rangle /N$")
-    plt.legend()
+    ax.plot(x, y, label=f"number of particles: {number_of_particles}")
+    if add_errorbar:
+        ax.errorbar(
+            x,
+            y,
+            yerr=[
+                std / expected_value
+                for expected_value, std in zip(
+                    ground_state_expected_values, ground_state_stds
+                )
+            ],
+            fmt="none",
+            ecolor="black",
+            elinewidth=0.5,
+            capsize=2,
+        )
+    ax.set_xlabel("Temperature")
+    ax.set_ylabel("Ground state expected value")
+    ax.set_title(f"Number of particles: {number_of_particles}")
 
 
 def plot_specific_heat_capacity(
-    temperature_range, number_of_particles, total_energy_std
+    number_of_particles,
+    temperatures,
+    total_energies,
+    critical_temperature=None,
+    ax=None,
 ):
+    if ax is None:
+        ax = plt.gca()
 
-    cv_list = [
-        calculations.get_specific_heat_capacity(
-            temperature=temperature,
-            number_of_particles=number_of_particles,
-            total_energy_std=total_energy_std[temperature_range.index(temperature)],
+    heat_capacities = calculations.get_specific_heat_capacities(
+        total_energies=total_energies, temperatures=temperatures,
+    )
+    if critical_temperature is not None:
+        ax.axvline(x=critical_temperature, color="red", linestyle="--")
+
+    ax.plot(temperatures[:-1], heat_capacities, "bo")
+    ax.set_xlabel("Temperature")
+    ax.set_ylabel("Specific heat capacity")
+    ax.set_title(f"Number of particles: {number_of_particles}")
+
+def plot_critical_temperature(data):
+    critical_temperatures = []
+    for number_of_particles, number_of_particles_data in data.items():
+        critical_temperatures.append(
+            calculations.get_critical_temperature(
+                temperature_range=number_of_particles_data["temperatures"],
+                ground_state_expected_values=number_of_particles_data[
+                    "ground_state_expected_values"
+                ],
+                number_of_particles=int(number_of_particles),
+            )
         )
-        for temperature in temperature_range
-    ]
-    plt.plot(temperature_range, cv_list)
-    plt.xlabel(r"$T$")
-    plt.ylabel(r"$c_{v}\left(T\right)$")
-    plt.legend()
-
-
-def plot_critical_temperature(
-    number_of_particles_list, ground_state_expected_values_list, temperature_range_list
-):
-    critical_temperate = [
-        calculations.get_critical_temperature(
-            temperature_range=temperature_range_list[index],
-            ground_state_expected_values=ground_state_expected_values_list[index],
-            number_of_particles=number_of_particles_list[index],
-        )
-        for index in number_of_particles_list
-    ]
-    plt.plot(number_of_particles_list, critical_temperate)
-    plt.xlabel(r"$N$")
-    plt.ylabel(r"$T_{C}\left(N\right)$")
+    print(critical_temperatures)
+    plt.plot([int(key) for key in data.keys()], critical_temperatures)
+    plt.xlabel("Number of particles")
+    plt.ylabel("Critical temperature")
+    plt.loglog()
+    plt.grid()
+    plt.title("Critical temperature (log-log scale)")
+    plt.show()
 
 
 if __name__ == "__main__":

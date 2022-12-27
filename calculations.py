@@ -51,11 +51,19 @@ def get_decrease_probability(mu, temperature, energy_level):
     return np.divide(minus_state, plus_state + minus_state)
 
 
-def get_specific_heat_capacity(total_energy_std, temperature, number_of_particles):
-    return (total_energy_std / temperature) ** 2 / number_of_particles
+def get_specific_heat_capacities(total_energies, temperatures):
+    heat_capacities = []
+    for i in range(len(total_energies) - 1):
+        heat_capacities.append(
+            (total_energies[i + 1] - total_energies[i])
+            / (temperatures[i + 1] - temperatures[i])
+        )
+    return heat_capacities
 
 
-def get_critical_temperature(temperature_range, ground_state_expected_values, number_of_particles):
+def get_critical_temperature(
+    temperature_range, ground_state_expected_values, number_of_particles
+):
     x = temperature_range
     y = [
         expected_value / number_of_particles
