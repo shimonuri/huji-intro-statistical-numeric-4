@@ -187,6 +187,9 @@ class Model:
         )
         while not self._should_stop(half_attempt, full_attempt):
             steps *= 2
+            if steps > constants.MAX_STEPS:
+                logging.info(f"Max steps reached: {steps}")
+                return full_attempt
             logging.info(f"Running {steps:.0e} steps")
             half_attempt.copy(full_attempt)
             half_attempt = self._run_attempt(half_attempt, steps // 2)

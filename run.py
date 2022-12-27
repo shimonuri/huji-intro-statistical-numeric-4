@@ -8,6 +8,7 @@ import json
 import multiprocessing
 import signal
 import os
+import pathlib
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -66,13 +67,15 @@ def run_multiple_models(path, numbers_of_particles=None, fast=False, processes=1
         if fast:
             temperatures = [0.2, 1]
         else:
-            temperatures = _get_temperatures(number_of_particles)
+            temperatures = _get_temperatures(number_of_particles, step_side=0.5)
         (
             ground_state_expected_values,
             ground_state_stds,
             total_energy,
             total_energy_stds,
-        ) = multiple_temperature_runs(number_of_particles, temperatures, processes)
+        ) = multiple_temperature_runs(
+            number_of_particles, temperatures, processes, path
+        )
         plot_ground_state_expected_value(
             temperature_range=temperatures,
             ground_state_expected_values=ground_state_expected_values,
@@ -99,7 +102,7 @@ def _initialize_process(parent_pid):
     signal.signal(signal.SIGINT, _handle_sigint)
 
 
-def multiple_temperature_runs(number_of_particles, temperatures, processes):
+def multiple_temperature_runs(number_of_particles, temperatures, processes, path):
     ground_state_expected_values = []
     ground_state_stds = []
     total_energy = []
@@ -110,7 +113,14 @@ def multiple_temperature_runs(number_of_particles, temperatures, processes):
         ) as pool:
             results = pool.starmap(
                 _run_model,
-                [(number_of_particles, temperature) for temperature in temperatures],
+                [
+                    (
+                        number_of_particles,
+                        temperature,
+                        pathlib.Path(path).with_suffix(f".{temperature}.json"),
+                    )
+                    for temperature in temperatures
+                ],
             )
     except KeyboardInterrupt:
         logging.info("Keyboard interrupt received, terminating...")
@@ -131,20 +141,33 @@ def multiple_temperature_runs(number_of_particles, temperatures, processes):
     )
 
 
-def _run_model(number_of_particles, temperature):
+def _run_model(number_of_particles, temperature, path):
     current_model = model.Model(
         number_of_particles=number_of_particles,
         temperature=temperature,
         stop_condition=_get_stop_condition(temperature),
     )
     result = current_model.run()
+    with open(path.as_posix(), "wt") as file:
+        json.dump(
+            {
+                "number_of_particles": number_of_particles,
+                "temperature": temperature,
+                "ground_state_expected_value": result.data.ground_level.expected_value,
+                "ground_state_std": result.data.ground_level.std,
+                "total_energy_expected_value": result.data.total_energy_expected_value,
+                "total_energy_std": result.data.total_energy_std,
+            },
+            file,
+            indent=4,
+        )
     return result
 
 
-def _get_temperatures(number_of_particles):
+def _get_temperatures(number_of_particles, step_side=0.2):
     max_temperature = _get_max_temperature(number_of_particles)
     return [
-        0.2 * temperature for temperature in range(1, int(max_temperature // 0.2) + 2)
+        step_side * temperature for temperature in range(1, int(max_temperature // step_side) + 2)
     ]
 
 
