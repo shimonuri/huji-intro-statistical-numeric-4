@@ -67,7 +67,7 @@ def run_multiple_models(path, numbers_of_particles=None, fast=False, processes=1
         if fast:
             temperatures = [0.2, 1]
         else:
-            temperatures = _get_temperatures(number_of_particles, step_side=0.5)
+            temperatures = _get_temperatures(number_of_particles, step_side=0.4)
         (
             ground_state_expected_values,
             ground_state_stds,
